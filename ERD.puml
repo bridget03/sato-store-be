@@ -1,0 +1,64 @@
+@startuml E-Commerce System ERD
+
+' Define entities
+entity "User" as user {
+  *_id : ObjectId
+  --
+  *username : String
+  *email : String
+  *password : String
+  *role : String
+  createdAt : Date
+  updatedAt : Date
+}
+
+entity "Product" as product {
+  *_id : ObjectId
+  --
+  *name : String
+  *description : String
+  *price : Number
+  image : String
+  *type : String
+  inStock : Boolean
+  createdAt : Date
+  updatedAt : Date
+}
+
+entity "Cart" as cart {
+  *_id : ObjectId
+  --
+  *userId : ObjectId <<FK>>
+  *totalAmount : Number
+  createdAt : Date
+  updatedAt : Date
+}
+
+entity "CartItem" as cartItem {
+  *productId : ObjectId <<FK>>
+  *quantity : Number
+  *price : Number
+  *name : String
+  image : String
+}
+
+' Define relationships
+user ||--o{ cart : has
+cart ||--o{ cartItem : contains
+product ||--o{ cartItem : referenced in
+
+note bottom of user
+  User can have only one active cart
+end note
+
+note bottom of product
+  Products can be added to multiple carts
+  through CartItem
+end note
+
+note bottom of cartItem
+  CartItem is embedded within Cart
+  (not a separate collection)
+end note
+
+@enduml 
