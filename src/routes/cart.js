@@ -76,11 +76,7 @@ const router = express.Router();
  */
 router.get(
   "/cart/:userId",
-  [
-    param("userId")
-      .isMongoId()
-      .withMessage("Invalid user ID format")
-  ],
+  [param("userId").isMongoId().withMessage("Invalid user ID format")],
   auth,
   async (req, res) => {
     const errors = validationResult(req);
@@ -96,16 +92,16 @@ router.get(
     try {
       // Find or create cart for the user
       let cart = await Cart.findOne({ userId: req.params.userId });
-      
+
       if (!cart) {
         cart = new Cart({
           userId: req.params.userId,
           items: [],
-          totalAmount: 0
+          totalAmount: 0,
         });
         await cart.save();
       }
-      
+
       res.status(200).json(cart);
     } catch (error) {
       console.error("Error fetching cart:", error);
@@ -154,15 +150,13 @@ router.post(
   "/cart",
   [
     auth,
-    body("_id")
-      .isMongoId()
-      .withMessage("Invalid product ID format"),
+    body("_id").isMongoId().withMessage("Invalid product ID format"),
     body("quantity")
       .isInt({ min: 1 })
       .withMessage("Quantity must be at least 1"),
     body("size")
       .isString()
-      .isIn(['S', 'M', 'L', 'XL', 'XXL'])
+      .isIn(["S", "M", "L", "XL", "XXL"])
       .withMessage("Size must be one of: S, M, L, XL, XXL"),
   ],
   async (req, res) => {
@@ -182,9 +176,11 @@ router.post(
       }
 
       // Validate that the requested size exists for this product
-      const sizeExists = product.size.some(s => s.name === size);
+      const sizeExists = product.size.some((s) => s.name === size);
       if (!sizeExists) {
-        return res.status(400).json({ message: "Selected size is not available for this product" });
+        return res
+          .status(400)
+          .json({ message: "Selected size is not available for this product" });
       }
 
       // Find or create cart
@@ -193,13 +189,13 @@ router.post(
         cart = new Cart({
           userId,
           items: [],
-          totalAmount: 0
+          totalAmount: 0,
         });
       }
 
       // Check if item with same product ID and size already exists in cart
-      const itemIndex = cart.items.findIndex(item => 
-        item._id.toString() === _id && item.size === size
+      const itemIndex = cart.items.findIndex(
+        (item) => item._id.toString() === _id && item.size === size
       );
 
       if (itemIndex > -1) {
@@ -213,13 +209,13 @@ router.post(
           price: product.price,
           image: product.images[0],
           size: size,
-          quantity
+          quantity,
         });
       }
 
       // Recalculate total amount
       cart.totalAmount = cart.items.reduce(
-        (total, item) => total + (item.price * item.quantity), 
+        (total, item) => total + item.price * item.quantity,
         0
       );
 
@@ -260,13 +256,65 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Cart'
  */
+// router.delete(
+//   "/cart/deleteItem",
+//   [
+//     auth,
+//     body("_id")
+//       .isMongoId()
+//       .withMessage("Invalid product ID format")
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({ errors: errors.array() });
+//     }
+
+//     const { _id } = req.body;
+//     const userId = req.user.id;
+
+//     try {
+//       // Find the cart
+//       const cart = await Cart.findOne({ userId });
+//       if (!cart) {
+//         return res.status(404).json({ message: "Cart not found" });
+//       }
+
+//       // Find the item
+//       const itemIndex = cart.items.findIndex(item =>
+//         item._id.toString() === _id
+//       );
+
+//       if (itemIndex === -1) {
+//         return res.status(404).json({ message: "Item not found in cart" });
+//       }
+
+//       // Remove the item
+//       cart.items.splice(itemIndex, 1);
+
+//       // Recalculate total amount
+//       cart.totalAmount = cart.items.reduce(
+//         (total, item) => total + (item.price * item.quantity),
+//         0
+//       );
+
+//       await cart.save();
+//       res.status(200).json(cart);
+//     } catch (error) {
+//       console.error("Error removing item from cart:", error);
+//       res.status(500).json({ message: "Error removing item from cart" });
+//     }
+//   }
+// );
+
+// const { param, validationResult } = require("express-validator");
+
 router.delete(
   "/cart/deleteItem",
   [
     auth,
-    body("_id")
-      .isMongoId()
-      .withMessage("Invalid product ID format")
+    body("itemId").isMongoId().withMessage("Invalid item ID format"),
+    body("sizeProduct").notEmpty().withMessage("Size is required"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -274,31 +322,28 @@ router.delete(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { _id } = req.body;
+    const { itemId, sizeProduct } = req.body;
     const userId = req.user.id;
 
     try {
-      // Find the cart
       const cart = await Cart.findOne({ userId });
       if (!cart) {
         return res.status(404).json({ message: "Cart not found" });
       }
 
-      // Find the item
-      const itemIndex = cart.items.findIndex(item => 
-        item._id.toString() === _id
+      // So sánh theo item._id và size
+      const itemIndex = cart.items.findIndex(
+        (item) => item._id.toString() === itemId && item.size === sizeProduct
       );
 
       if (itemIndex === -1) {
         return res.status(404).json({ message: "Item not found in cart" });
       }
 
-      // Remove the item
       cart.items.splice(itemIndex, 1);
 
-      // Recalculate total amount
       cart.totalAmount = cart.items.reduce(
-        (total, item) => total + (item.price * item.quantity), 
+        (total, item) => total + item.price * item.quantity,
         0
       );
 
@@ -310,7 +355,6 @@ router.delete(
     }
   }
 );
-
 /**
  * @swagger
  * /api/cart/delete:
@@ -330,30 +374,26 @@ router.delete(
  *                 message:
  *                   type: string
  */
-router.delete(
-  "/cart/delete",
-  auth,
-  async (req, res) => {
-    const userId = req.user.id;
+router.delete("/cart/delete", auth, async (req, res) => {
+  const userId = req.user.id;
 
-    try {
-      // Find the cart
-      const cart = await Cart.findOne({ userId });
-      if (!cart) {
-        return res.status(404).json({ message: "Cart not found" });
-      }
-
-      // Clear items and reset total
-      cart.items = [];
-      cart.totalAmount = 0;
-
-      await cart.save();
-      res.status(200).json({ message: "Cart cleared successfully" });
-    } catch (error) {
-      console.error("Error clearing cart:", error);
-      res.status(500).json({ message: "Error clearing cart" });
+  try {
+    // Find the cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
     }
-  }
-);
 
-export default router; 
+    // Clear items and reset total
+    cart.items = [];
+    cart.totalAmount = 0;
+
+    await cart.save();
+    res.status(200).json({ message: "Cart cleared successfully" });
+  } catch (error) {
+    console.error("Error clearing cart:", error);
+    res.status(500).json({ message: "Error clearing cart" });
+  }
+});
+
+export default router;
