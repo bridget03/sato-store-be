@@ -1,6 +1,6 @@
-import express from 'express';
-import Product from '../models/productModel.js';
-import authAdmin from '../middleware/authAdmin.js';
+import express from "express";
+import Product from "../models/productModel.js";
+import authAdmin from "../middleware/authAdmin.js";
 
 const router = express.Router();
 
@@ -81,19 +81,19 @@ const router = express.Router();
  *                 product:
  *                   $ref: '#/components/schemas/Product'
  */
-router.post('/product/new', authAdmin, async (req, res) => {
-    try {
-        const product = await Product.create(req.body);
-        res.status(201).json({
-            success: true,
-            product
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
+router.post("/product/new", authAdmin, async (req, res) => {
+  try {
+    const product = await Product.create(req.body);
+    res.status(201).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 /**
@@ -121,20 +121,20 @@ router.post('/product/new', authAdmin, async (req, res) => {
  *                   items:
  *                     $ref: '#/components/schemas/Product'
  */
-router.get('/products', authAdmin, async (req, res) => {
-    try {
-        const products = await Product.find();
-        res.status(200).json({
-            success: true,
-            count: products.length,
-            products
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
+router.get("/products", authAdmin, async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 /**
@@ -162,20 +162,20 @@ router.get('/products', authAdmin, async (req, res) => {
  *                   items:
  *                     $ref: '#/components/schemas/Product'
  */
-router.get('/products/active', authAdmin, async (req, res) => {
-    try {
-        const products = await Product.find({ deletedAt: null });
-        res.status(200).json({
-            success: true,
-            count: products.length,
-            products
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
+router.get("/products/active", authAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({ deletedAt: null });
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 /**
@@ -260,78 +260,78 @@ router.get('/products/active', authAdmin, async (req, res) => {
  *                 message:
  *                   type: string
  */
-router.get('/product/:id', authAdmin, async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-        res.status(200).json({
-            success: true,
-            product
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+router.get("/product/:id", authAdmin, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
-router.put('/product/:id', authAdmin, async (req, res) => {
-    try {
-        let product = await Product.findById(req.params.id);
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-
-        product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
-
-        res.status(200).json({
-            success: true,
-            product
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+router.put("/product/:id", authAdmin, async (req, res) => {
+  try {
+    let product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
+
+    product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
-router.delete('/product/:id', authAdmin, async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-
-        // Soft delete by setting deletedAt
-        product.deletedAt = new Date();
-        await product.save();
-
-        res.status(200).json({
-            success: true,
-            message: 'Product deleted successfully'
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+router.delete("/product/:id", authAdmin, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
+
+    // Soft delete by setting deletedAt
+    product.deletedAt = new Date();
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 /**
@@ -364,31 +364,31 @@ router.delete('/product/:id', authAdmin, async (req, res) => {
  *                 product:
  *                   $ref: '#/components/schemas/Product'
  */
-router.post('/product/:id/restore', authAdmin, async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-
-        // Restore by setting deletedAt to null
-        product.deletedAt = null;
-        await product.save();
-
-        res.status(200).json({
-            success: true,
-            message: 'Product restored successfully',
-            product
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+router.post("/product/:id/restore", authAdmin, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
+
+    // Restore by setting deletedAt to null
+    product.deletedAt = null;
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product restored successfully",
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
-export default router; 
+export default router;

@@ -9,6 +9,7 @@ import paymentRoutes from "./routes/payment.js";
 import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
+import orderRoutes from "./routes/order.js";
 
 dotenv.config();
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api", productRoutes);
 app.use("/api", cartRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Basic error handling
 app.use((err, req, res, next) => {
