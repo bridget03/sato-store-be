@@ -1,76 +1,3 @@
-// import express from "express";
-// import Order from "../models/Order.js";
-
-// const router = express.Router();
-
-// // Create a new order
-// router.post("/", async (req, res) => {
-//   try {
-//     const newOrder = new Order(req.body);
-//     await newOrder.save();
-//     res
-//       .status(201)
-//       .json({ message: "Order created successfully", order: newOrder });
-//   } catch (error) {
-//     console.error("Error creating order:", error.message, error.stack);
-//     res
-//       .status(500)
-//       .json({ message: "Failed to create order", error: error.message });
-//   }
-// });
-
-// router.get("/orders/:orderId", async (req, res) => {
-//   try {
-//     const order = await Order.findById(req.params.orderId);
-//     if (!order) {
-//       console.error("Order not found:", req.params.orderId);
-//       return res.status(404).json({ message: "Order not found" });
-//     }
-//     return res.status(200).json({ order });
-//   } catch (error) {
-//     console.error("Error fetching order:", error.message);
-//     return res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // DELETE order by ID
-// router.delete("/:orderId", async (req, res) => {
-//   const { orderId } = req.params;
-
-//   try {
-//     const deletedOrder = await Order.findByIdAndDelete(orderId);
-
-//     if (!deletedOrder) {
-//       return res.status(404).json({ message: "Order not found" });
-//     }
-
-//     res
-//       .status(200)
-//       .json({ message: "Order deleted successfully", order: deletedOrder });
-//   } catch (error) {
-//     console.error("Error deleting order:", error.message, error.stack);
-//     res
-//       .status(500)
-//       .json({ message: "Failed to delete order", error: error.message });
-//   }
-// });
-
-// router.delete("/", async (req, res) => {
-//   try {
-//     const result = await Order.deleteMany({});
-//     res.status(200).json({
-//       message: "All orders deleted successfully",
-//       deletedCount: result.deletedCount,
-//     });
-//   } catch (error) {
-//     console.error("Error deleting all orders:", error.message, error.stack);
-//     res
-//       .status(500)
-//       .json({ message: "Failed to delete orders", error: error.message });
-//   }
-// });
-// export default router;
-
 import express from "express";
 import Order from "../models/Order.js";
 import jwt from "jsonwebtoken";
@@ -96,6 +23,49 @@ const auth = (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+// Get all orders for the authenticated user with pagination
+router.get("/", auth, async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    if (isNaN(pageNum) || pageNum < 1 || isNaN(limitNum) || limitNum < 1) {
+      console.error("Invalid pagination parameters:", { page, limit });
+      return res.status(400).json({ message: "Invalid pagination parameters" });
+    }
+
+    console.log("Fetching orders for userId:", req.user.id);
+    const query = { userId: req.user.id };
+
+    const [orders, totalOrders] = await Promise.all([
+      Order.find(query)
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(totalOrders / limitNum);
+
+    console.log("Orders found:", orders.length, "Total orders:", totalOrders);
+
+    res.status(200).json({
+      success: true,
+      orders,
+      totalOrders,
+      totalPages,
+      currentPage: pageNum,
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error.message, error.stack);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch orders", error: error.message });
+  }
+});
 
 // Create a new order
 router.post("/", async (req, res) => {

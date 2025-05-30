@@ -55,6 +55,7 @@ router.post(
     body("shippingAddress.phone").notEmpty().trim(),
   ],
   async (req, res) => {
+    console.log("Received payload:", req.body);
     try {
       // Validate input
       const errors = validationResult(req);
