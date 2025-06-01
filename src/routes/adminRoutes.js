@@ -1,7 +1,8 @@
 import express from "express";
 import Product from "../models/productModel.js";
 import authAdmin from "../middleware/authAdmin.js";
-
+import Order from "../models/Order.js";
+import auth from "../middleware/auth.js";
 const router = express.Router();
 
 /**
@@ -382,6 +383,110 @@ router.post("/product/:id/restore", authAdmin, async (req, res) => {
       success: true,
       message: "Product restored successfully",
       product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Order routes - Specific routes first
+router.get("/orders/revenue", authAdmin, async (req, res) => {
+  try {
+    console.log("Starting revenue calculation...");
+
+    const orders = await Order.find()
+      .select(
+        "totalAmount orderStatus paymentStatus paymentMethod userId createdAt"
+      )
+      .lean();
+
+    console.log("Found orders:", orders ? orders.length : "null");
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No orders found",
+      });
+    }
+
+    const revenueByStatus = {};
+    let totalRevenue = 0;
+
+    for (const order of orders) {
+      try {
+        const status = order.orderStatus || "unknown";
+        const amount = parseFloat(order.totalAmount || 0);
+
+        if (!revenueByStatus[status]) {
+          revenueByStatus[status] = {
+            totalAmount: 0,
+            count: 0,
+          };
+        }
+
+        if (!isNaN(amount)) {
+          revenueByStatus[status].totalAmount += amount;
+          revenueByStatus[status].count += 1;
+          totalRevenue += amount;
+        }
+      } catch (orderError) {
+        console.error("Error processing order:", order._id, orderError);
+      }
+    }
+
+    // Format numbers
+    totalRevenue = Number(totalRevenue.toFixed(2));
+    Object.keys(revenueByStatus).forEach((status) => {
+      revenueByStatus[status].totalAmount = Number(
+        revenueByStatus[status].totalAmount.toFixed(2)
+      );
+    });
+
+    const formattedOrders = orders.map((order) => ({
+      id: order._id,
+      userId: order.userId,
+      totalAmount: order.totalAmount || 0,
+      orderStatus: order.orderStatus || "unknown",
+      paymentStatus: order.paymentStatus || "unknown",
+      paymentMethod: order.paymentMethod || "unknown",
+      createdAt: order.createdAt,
+    }));
+
+    console.log("Successfully calculated revenue");
+
+    res.status(200).json({
+      success: true,
+      totalRevenue,
+      totalOrders: orders.length,
+      revenueByStatus,
+      orders: formattedOrders,
+    });
+  } catch (error) {
+    console.error("Revenue calculation error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+
+    res.status(500).json({
+      success: false,
+      error: "Error calculating revenue",
+      details: error.message,
+    });
+  }
+});
+
+// General orders list route
+router.get("/orders", authAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find();
+    res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
     });
   } catch (error) {
     res.status(500).json({

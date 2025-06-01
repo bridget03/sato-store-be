@@ -7,7 +7,6 @@ const router = express.Router();
 // Middleware xác thực token
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split("Bearer ")[1];
-  console.log("Auth middleware: token:", token);
   if (!token) {
     console.error("Auth middleware: No token provided");
     return res.status(401).json({ message: "No token provided" });
@@ -15,7 +14,6 @@ const auth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Auth middleware: Decoded token:", decoded);
     req.user = decoded;
     next();
   } catch (error) {
